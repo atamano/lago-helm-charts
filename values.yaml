@@ -63,6 +63,12 @@ global:
     #region: "<your-aws-region>"
     #endpoint: "https://s3.<region>.amazonaws.com" # Leave empty for default AWS S3 endpoint
 
+  gcs:
+    enabled: false
+    #projectId: "<your-gcp-project-id>"
+    #bucket: "<your-gcs-bucket>"
+    #keyFileBase64: "<your-base64-encoded-keyfile>"
+
   smtp:
     # username and password are not required here if using existingSecret
     enabled: false

@@ -161,6 +161,14 @@ spec:
                   name: {{ .Release.Name }}-secrets
                   key: license
             {{ end }}
+           {{ if .Values.global.gcs.enabled }}
+            - name: LAGO_USE_GCS
+              value: "true"
+            - name: LAGO_GCS_BUCKET
+              value: {{ .Values.global.gcs.bucket | quote }}
+            - name: LAGO_GCS_PROJECT_ID
+              value: {{ .Values.global.gcs.projectId | quote }}
+          {{ end }}
           {{ if or .Values.global.s3.enabled .Values.minio.enabled }}
             - name: LAGO_USE_AWS_S3
               value: "true"
@@ -262,16 +270,29 @@ spec:
           resources:
             {{- toYaml . | nindent 12}}
           {{- end }}
-          {{- if and (not .Values.global.s3.enabled) (not .Values.minio.enabled) }}
+          {{- if and (not .Values.global.s3.enabled) (not .Values.minio.enabled) (not .Values.global.gcs.enabled) }}
           volumeMounts:
             - mountPath: /app/storage
               name: {{ .Release.Name }}-storage-data
+          {{- else if .Values.global.gcs.enabled }}
+          volumeMounts:
+            - name: gcs-keyfile
+              mountPath: /app/gcs_keyfile.json
+              subPath: gcs_keyfile.json
           {{ end }}
       restartPolicy: Always
-      {{- if and (not .Values.global.s3.enabled) (not .Values.minio.enabled) }}
+      {{- if and (not .Values.global.s3.enabled) (not .Values.minio.enabled) (not .Values.global.gcs.enabled) }}
       volumes:
         - name: {{ .Release.Name }}-storage-data
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-storage-data
+      {{- else if .Values.global.gcs.enabled }}
+      volumes:
+        - name: gcs-keyfile-volume
+          secret:
+            secretName: {{ .Release.Name }}-secrets
+            items:
+              - key: gcs_keyfile.json
+                path: gcs_keyfile.json
       {{ end }}
       serviceAccountName: {{ .Values.global.serviceAccountName | default (printf "%s-serviceaccount" .Release.Name) }}

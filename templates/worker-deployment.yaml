@@ -235,6 +235,11 @@ spec:
           volumeMounts:
             - mountPath: /app/storage
               name: {{ .Release.Name }}-storage-data
+          {{- else if .Values.global.gcs.enabled }}
+          volumeMounts:
+            - name: gcs-keyfile
+              mountPath: /app/gcs_keyfile.json
+              subPath: gcs_keyfile.json
           {{ end }}
       restartPolicy: Always
       {{ if and (not .Values.global.s3.enabled) (not .Values.minio.enabled) }}
@@ -242,5 +247,13 @@ spec:
         - name: {{ .Release.Name }}-storage-data
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-storage-data
+      {{- else if .Values.global.gcs.enabled }}
+      volumes:
+        - name: gcs-keyfile-volume
+          secret:
+            secretName: {{ .Release.Name }}-secrets
+            items:
+              - key: gcs_keyfile.json
+                path: gcs_keyfile.json
       {{ end }}
       serviceAccountName: {{ .Values.global.serviceAccountName | default (printf "%s-serviceaccount" .Release.Name) }}
